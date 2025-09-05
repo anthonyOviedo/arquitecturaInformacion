@@ -1,0 +1,14 @@
+{
+  "name": "laptop-catalog",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "nuxt": "^3.11.0",
+    "@nuxt/content": "^2.8.1"
+  }
+}
