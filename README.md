@@ -1,5 +1,8 @@
 # arquitecturaInformacion
 
+# tarea2 app in netfly
+https://polite-chaja-c33d38.netlify.app/
+
 Nuxt 3 application that displays a catalog of laptops. Laptop details are stored as Markdown in `content/tarea2/laptops` and can be regenerated from the CSV dataset in `data/laptops.csv` using the provided script.
 
 ## Getting Started
