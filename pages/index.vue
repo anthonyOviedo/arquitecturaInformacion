@@ -1,5 +1,4 @@
 <script setup>
-// SEO meta
 useHead({
   title: 'Catálogo de Laptops',
   meta: [
@@ -7,10 +6,8 @@ useHead({
   ]
 })
 
-// Carga todos los documentos bajo content/laptops
 const docs = await queryContent('laptops').only(['_path', 'title', 'body']).find()
 
-// Helpers para extraer texto del AST de Nuxt Content
 function textFrom(node) {
   if (!node) return ''
   if (typeof node === 'string') return node
@@ -30,11 +27,9 @@ function collect(node, pred, out = []) {
 function extractSpecs(doc) {
   const body = doc?.body
   if (!body) return {}
-  // Busca primer nodo tabla (soporta shape type/tag)
   const tables = collect(body, n => n?.tag === 'table' || n?.type === 'table')
   if (!tables.length) return {}
   const table = tables[0]
-  // Obtiene filas (tr / tableRow)
   const rows = collect(table, n => n?.tag === 'tr' || n?.type === 'tableRow')
   const kv = {}
   for (const row of rows) {
@@ -43,55 +38,46 @@ function extractSpecs(doc) {
     const a = (cells[0] && textFrom(cells[0]).trim()) || ''
     const b = (cells[1] && textFrom(cells[1]).trim()) || ''
     if (!a) continue
-    // omite encabezado típico "Spec | Value"
     if (a.toLowerCase() === 'spec' && b.toLowerCase() === 'value') continue
     kv[a] = b
   }
   return kv
 }
 
-// Construye filas normalizadas con columnas conocidas
 const baseCols = ['Name', 'Operating System', 'Processor', 'Screen Size', 'RAM', 'Storage', 'Touch Screen', 'Price']
 const items = docs.map(doc => {
   const specs = extractSpecs(doc)
   const name = doc.title || specs.Name || (doc.body && collect(doc.body, n => n?.tag === 'h1' || (n?.type === 'heading' && n?.depth === 1))[0] && textFrom(collect(doc.body, n => n?.tag === 'h1' || (n?.type === 'heading' && n?.depth === 1))[0]).trim()) || doc._path.split('/').pop()
   const row = { path: doc._path, Name: name }
   for (const k of baseCols.slice(1)) row[k] = specs[k]
-  // agrega cualquier otra spec extra encontrada
   for (const [k, v] of Object.entries(specs)) {
     if (!(k in row)) row[k] = v
   }
   return row
 })
 
-// Columnas disponibles (unión) con orden amigable
 const colSet = new Set(items.flatMap(r => Object.keys(r)))
 colSet.delete('path')
 const extras = Array.from(colSet).filter(c => !baseCols.includes(c)).sort()
 const allCols = [...baseCols.filter(c => colSet.has(c)), ...extras]
-
-// Filtros: categoría + valor
 const categoryOptions = allCols.filter(c => c !== 'Name')
 const preferred = ['Operating System', 'Processor', 'Screen Size', 'RAM']
 const defaultCategory = preferred.find(c => categoryOptions.includes(c)) || categoryOptions[0] || 'Name'
 const selectedCategory = ref(defaultCategory)
 const selectedValue = ref('') // vacío = todas
 watch(() => selectedCategory.value, () => { selectedValue.value = '' })
-
-// Valores disponibles para la categoría actual
 const collator = new Intl.Collator(undefined, { sensitivity: 'base' })
+
 const valueOptions = computed(() => {
   const key = selectedCategory.value
   const vals = Array.from(new Set(items.map(r => r[key]).filter(Boolean)))
   return vals.sort((a, b) => collator.compare(String(a), String(b)))
 })
 
-// Orden alfabético por Name
 const sortedRowsByName = computed(() => {
   return [...items].sort((a, b) => collator.compare(String(a.Name || ''), String(b.Name || '')))
 })
 
-// Filtrado por categoría/valor seleccionado
 const filteredRows = computed(() => {
   const key = selectedCategory.value
   const val = selectedValue.value
@@ -99,7 +85,6 @@ const filteredRows = computed(() => {
   return sortedRowsByName.value.filter(r => String(r[key] || '').trim() === String(val).trim())
 })
 
-// Colocamos la columna de la categoría seleccionada en la primera posición
 const orderedColumns = computed(() => {
   const key = selectedCategory.value
   if (!key) return allCols
