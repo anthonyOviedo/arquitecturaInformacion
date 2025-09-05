@@ -1,6 +1,5 @@
 <script setup>
 import { useRoute } from 'vue-router'
-import { queryContent } from '#content'
 
 const route = useRoute()
 const category = route.params.category
@@ -17,8 +16,8 @@ if (!meta) {
   throw createError({ statusCode: 404, statusMessage: 'Categoría no válida' })
 }
 
-const { data } = await queryContent('laptops').find()
-const values = Array.from(new Set(data.map(item => item[meta.field]))).sort()
+const laptops = await queryContent('laptops').where({ _extension: 'md' }).find()
+const values = Array.from(new Set(laptops.map(item => item[meta.field]))).sort()
 </script>
 
 <template>

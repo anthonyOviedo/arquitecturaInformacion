@@ -1,25 +1,13 @@
-<script setup lang="ts">
-const route = useRoute()
-
-// Get the single CSV document
-const doc = await queryContent('laptops').findOne()
-
-// For CSV, rows are in `doc.body`
-const rows = doc?.body || []
-
-// Expect a `category` column in the CSV to match the route param
-const list = computed(() =>
-  rows.filter((r: any) => (r.category || '').toLowerCase() === String(route.params.category).toLowerCase())
-)
+<script setup>
+const laptops = await queryContent('laptops').where({ _extension: 'md' }).find()
 </script>
 
 <template>
   <section>
-    <h1>Catálogo de {{ route.params.category }}</h1>
+    <h1>Catálogo de Laptops</h1>
     <ul>
-      <li v-for="(item, i) in list" :key="i">
-        <NuxtLink :to="`/laptops/${item.slug}`">{{ item.Marca }} {{ item.Modelo }}</NuxtLink>
-        — {{ item['Sistema Operativo'] }}
+      <li v-for="lap in laptops" :key="lap._path">
+        <NuxtLink :to="lap._path">{{ lap.brand }} {{ lap.model }}</NuxtLink>
       </li>
     </ul>
   </section>
