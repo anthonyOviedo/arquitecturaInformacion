@@ -16,7 +16,9 @@ if (!meta) {
   throw createError({ statusCode: 404, statusMessage: 'Categoría no válida' })
 }
 
-const laptops = await queryContent('tarea2/laptops').where({ _extension: 'md' }).find()
+// Nota: los documentos en content/laptops no tienen front‑matter
+// para estas claves; esta página quedará vacía hasta que se añadan.
+const laptops = await queryContent('laptops').where({ _extension: 'md' }).find()
 const values = Array.from(new Set(laptops.map(item => item[meta.field]))).sort()
 </script>
 

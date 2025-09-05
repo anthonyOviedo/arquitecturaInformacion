@@ -1,0 +1,11 @@
+# MSI GF63 Thin 11UC-1294IN
+
+| Spec | Value |
+|---|---|
+| Processor | Core i7 |
+| Operating System | Windows 11 Home |
+| Storage | 4000 MB |
+| RAM | 16 GB |
+| Screen Size | 39.62 cm |
+| Touch Screen | No |
+| Price | $801.36 |
