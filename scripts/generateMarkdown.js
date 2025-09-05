@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const csvPath = path.join(__dirname, '..', 'data', 'laptops.csv');
-const outDir = path.join(__dirname, '..', 'content', 'laptops');
+const outDir = path.join(__dirname, '..', 'content', 'tarea2', 'laptops');
 
 const csv = fs.readFileSync(csvPath, 'utf-8').trim();
 const lines = csv.split(/\r?\n/);

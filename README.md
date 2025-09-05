@@ -1,6 +1,6 @@
 # arquitecturaInformacion
 
-Nuxt 3 application that displays a catalog of laptops. Laptop details are stored as Markdown in `content/laptops` and can be regenerated from the CSV dataset in `data/laptops.csv` using the provided script.
+Nuxt 3 application that displays a catalog of laptops. Laptop details are stored as Markdown in `content/tarea2/laptops` and can be regenerated from the CSV dataset in `data/laptops.csv` using the provided script.
 
 ## Getting Started
 
@@ -38,4 +38,4 @@ If you change `data/laptops.csv`, regenerate the Markdown files with:
 node scripts/generateMarkdown.js
 ```
 
-This creates files under `content/laptops/`.
+This creates files under `content/tarea2/laptops/`.

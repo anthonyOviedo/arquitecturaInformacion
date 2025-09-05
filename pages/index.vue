@@ -1,5 +1,5 @@
 <script setup>
-const laptops = await queryContent('laptops').where({ _extension: 'md' }).find()
+const laptops = await queryContent('tarea2/laptops').where({ _extension: 'md' }).find()
 </script>
 
 <template>

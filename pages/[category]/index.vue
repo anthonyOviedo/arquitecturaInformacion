@@ -16,7 +16,7 @@ if (!meta) {
   throw createError({ statusCode: 404, statusMessage: 'Categoría no válida' })
 }
 
-const laptops = await queryContent('laptops').where({ _extension: 'md' }).find()
+const laptops = await queryContent('tarea2/laptops').where({ _extension: 'md' }).find()
 const values = Array.from(new Set(laptops.map(item => item[meta.field]))).sort()
 </script>
 
