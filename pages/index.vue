@@ -1,810 +1,1107 @@
 <script setup lang="ts">
-import { useCoffeeCatalog } from '~/composables/useCoffeeCatalog'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 useHead({
-  title: 'Marketplace integral de café personalizado',
+  title: 'Experiencias de café de Costa Rica | Alma del Volcán',
   meta: [
     {
       name: 'description',
-      content: 'Propuesta integral para un portal de venta de café que orquesta personalización, logística y seguimiento para clientes, vendedores y administradores.'
+      content:
+        'Vive un recorrido sensorial por café de especialidad de Costa Rica: selecciona tu ritual, descubre orígenes y recibe tueste fresco en menos de 48 horas.'
     }
   ]
 })
 
-const table = await useCoffeeCatalog()
-const { q, categoryOptions, selectedCategory, selectedValue, valueOptions, orderedColumns, filteredRows, metrics } = table
+type HeroStat = { label: string; value: string; detail: string }
+const heroStats: HeroStat[] = [
+  { label: 'Denominaciones de origen', value: '8', detail: 'Microlotes de altura' },
+  { label: 'Tiempo al tueste', value: '48 h', detail: 'Desde tu orden' },
+  { label: 'Productores aliados', value: '35', detail: 'Cooperativas sostenibles' }
+]
 
-const formatMetric = (value: number | string, digits = 0) => {
-  if (value === undefined || value === null) return '—'
-  if (typeof value === 'number') {
-    return new Intl.NumberFormat('es-PA', {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits
-    }).format(value)
-  }
-  return String(value)
+const heroImage =
+  'https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=1600&q=80'
+
+type Experience = {
+  id: string
+  title: string
+  tagline: string
+  description: string
+  image: string
+  highlights: string[]
 }
 
-const formatCell = (value: unknown) => {
-  if (value === undefined || value === null || value === '') return '—'
-  if (typeof value === 'number') {
-    return new Intl.NumberFormat('es-PA', { maximumFractionDigits: 2 }).format(value)
+const experiences: Experience[] = [
+  {
+    id: 'amanecer',
+    title: 'Amanecer en Tarrazú',
+    tagline: 'Brillo cítrico y miel de caña',
+    description:
+      'Empieza el día con un pour-over calibrado y aromas a flor de azahar. Nuestro barista digital ajusta molienda y temperatura por ti.',
+    image: 'https://images.unsplash.com/photo-1461988091159-192b6df7054f?auto=format&fit=crop&w=900&q=80',
+    highlights: [
+      'Molienda a medida para V60 o Kalita',
+      'Suscripción semanal con tueste 48 h',
+      'Notas de mandarina, miel y cacao suave'
+    ]
+  },
+  {
+    id: 'ritual',
+    title: 'Ritual volcánico',
+    tagline: 'Cuerpo redondo y cacao intenso',
+    description:
+      'Un espresso inspirado en los suelos volcánicos de Tres Ríos. Configura tu perfil y recibe cápsulas o granos listos para tu máquina.',
+    image: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80',
+    highlights: [
+      'Curvas de tueste para espresso o moka',
+      'Blend exclusivo con notas de panela',
+      'Recomendaciones de maridaje en la app'
+    ]
+  },
+  {
+    id: 'tarde',
+    title: 'Tarde en el bosque nuboso',
+    tagline: 'Suavidad herbácea y flores blancas',
+    description:
+      'Experimenta un cold brew infusionado en frío con agua de manantial. Ideal para tardes cálidas y coctelería de autor.',
+    image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=900&q=80',
+    highlights: [
+      'Infusiones en frío de 18 horas',
+      'Concentrado listo para mocktails',
+      'Notas de lavanda, vainilla y caña dulce'
+    ]
   }
-  return String(value)
+]
+
+const selectedExperience = ref<Experience>(experiences[0])
+
+type RegionHighlight = {
+  name: string
+  altitude: string
+  profile: string
+  detail: string
 }
 
-const metricCards = computed(() => {
-  const snapshot = metrics.value
-  return [
-    { label: 'Lotes activos', value: snapshot.lots, digits: 0 },
-    { label: 'Inventario disponible (kg)', value: snapshot.inventory, digits: 0 },
-    { label: 'Orígenes representados', value: snapshot.origins, digits: 0 },
-    { label: 'Comercializadores activos', value: snapshot.vendors, digits: 0 }
-  ]
+const regionHighlights: RegionHighlight[] = [
+  {
+    name: 'Tarrazú',
+    altitude: '1 200 – 1 900 msnm',
+    profile: 'Cítricos brillantes, miel y chocolate',
+    detail: 'Cafetales en terrazas con sombra nativa que preservan biodiversidad y agua cristalina.'
+  },
+  {
+    name: 'Valle Central',
+    altitude: '1 000 – 1 400 msnm',
+    profile: 'Cuerpo aterciopelado y notas a nuez',
+    detail: 'Fincas familiares con procesos honey y lavado que resaltan dulzor natural.'
+  },
+  {
+    name: 'Tres Ríos',
+    altitude: '1 200 – 1 650 msnm',
+    profile: 'Cacao intenso, melaza y especias',
+    detail:
+      'Suelos volcánicos rodeados por los volcanes Irazú y Turrialba que concentran minerales únicos.'
+  }
+]
+
+type BrewProfile = {
+  id: string
+  name: string
+  method: string
+  notes: string
+  balance: number
+  ritual: string
+}
+
+const brewProfiles: BrewProfile[] = [
+  {
+    id: 'pour-over',
+    name: 'Brillante',
+    method: 'Pour-over',
+    notes: 'Ideal para quienes buscan acidez cítrica y un final sedoso.',
+    balance: 28,
+    ritual: 'Recomendado con microlotes de Tarrazú tostados ligero.'
+  },
+  {
+    id: 'chemex',
+    name: 'Equilibrada',
+    method: 'Chemex',
+    notes: 'Dulzura envolvente con notas a caramelo y frutas tropicales.',
+    balance: 52,
+    ritual: 'Perfecta para Valle Central y métodos de filtro compartidos.'
+  },
+  {
+    id: 'espresso',
+    name: 'Intensa',
+    method: 'Espresso',
+    notes: 'Cuerpo profundo, crema densa y recuerdos de cacao.',
+    balance: 82,
+    ritual: 'Explota los perfiles volcánicos de Tres Ríos en espresso o moka.'
+  }
+]
+
+const selectedProfile = ref<BrewProfile>(brewProfiles[1])
+const flavorBalance = ref<number>(selectedProfile.value.balance)
+
+const balanceDescriptor = computed(() => {
+  if (flavorBalance.value < 40) {
+    return {
+      title: 'Brillante & floral',
+      description: 'Resalta cítricos dulces, flor de café y acidez jugosa típica de Tarrazú.'
+    }
+  }
+  if (flavorBalance.value < 70) {
+    return {
+      title: 'Sedosa & mielada',
+      description: 'Balance dulce con textura cremosa y recuerdos a caña que definen el Valle Central.'
+    }
+  }
+  return {
+    title: 'Intensa & achocolatada',
+    description: 'Sensación aterciopelada con cacao especiado y melaza propia de Tres Ríos.'
+  }
 })
 
-const roleCapabilities = [
+const sliderGradient = computed(() => {
+  if (flavorBalance.value < 40) {
+    return 'linear-gradient(135deg, #f7efe5 0%, #d0a362 100%)'
+  }
+  if (flavorBalance.value < 70) {
+    return 'linear-gradient(135deg, #f7efe5 0%, #c38452 100%)'
+  }
+  return 'linear-gradient(135deg, #f7efe5 0%, #8c4a2f 100%)'
+})
+
+const timelineSteps = [
   {
-    role: 'Cliente',
-    description: 'Explora cafés de especialidad, configura tueste, molido y empaque y recibe entregas frescas con seguimiento granular.',
-    capabilities: [
-      'Catálogo responsivo con filtros avanzados por origen, proceso, puntaje SCA, inventario disponible y certificaciones.',
-      'Configurador que combina perfiles de tueste, grados de molienda y tipos de empaque con precios y tiempos de entrega dinámicos.',
-      'Carrito inteligente que sugiere suscripciones, kits de extracción y recordatorios de recompra basados en histórico sensorial.',
-      'Seguimiento post-compra con línea de tiempo logística, trazabilidad del lote y repositorio de guías de preparación personalizadas.'
-    ],
-    touchpoints: [
-      { name: 'Web / App', detail: 'UI omnicanal, accesible y con login social; permite guardar recetas y repetir configuraciones favoritas.' },
-      { name: 'Soporte contextual', detail: 'Chat integrado, asistentes basados en IA y centro de ayuda con recetas según el tueste adquirido.' },
-      { name: 'Comunidad', detail: 'Sistema de reseñas con notas de cata, badges de fidelidad y retos mensuales patrocinados por tostadores.' }
-    ]
+    title: 'Selección en altura',
+    description: 'Granos maduros recolectados a mano en cafetales sombreados por el bosque nuboso.'
   },
   {
-    role: 'Vendedor',
-    description: 'Agricultores, cooperativas o tostadores que suben lotes, monitorean el estado operativo y reciben retroalimentación en tiempo real.',
-    capabilities: [
-      'Onboarding guiado con checklists de trazabilidad, laboratorios aliados y validaciones de calidad antes del envío al acopio.',
-      'Panel de desempeño con métricas de velocidad de venta, tickets abiertos y pronóstico de demanda por perfil de tueste.',
-      'Herramientas para definir precios mínimos, ventanas de producción y reglas de disponibilidad basadas en inventario.',
-      'Historial de notificaciones operativas (acopio, tueste, despacho) con evidencia fotográfica y acuses digitales.'
-    ],
-    touchpoints: [
-      { name: 'Panel web', detail: 'Gestor de lotes, control documental, contratos digitales y capacidad de generar etiquetas logísticas.' },
-      { name: 'Alertas proactivas', detail: 'Push, email y SMS con hitos críticos (recepción, QC, tostado, liquidación).' },
-      { name: 'Integraciones', detail: 'API para subir lotes desde ERPs agrícolas y sincronizar inventario físico.' }
-    ]
+    title: 'Beneficiado preciso',
+    description: 'Procesos honey y lavado controlados que conservan dulzor natural y reducen el uso de agua.'
   },
   {
-    role: 'Admin',
-    description: 'Equipo interno que orquesta catálogo, operaciones, riesgo y analítica financiera del marketplace.',
-    capabilities: [
-      'Panel maestro con tablero de mando por SLA (acopio, tueste, despacho) y visibilidad de capacidad por centro de acopio.',
-      'Motor de reglas para aprobar lotes, ajustar márgenes dinámicos, segmentar campañas y activar promociones temáticas.',
-      'Sistema de conciliación con split de pagos, anticipos a productores y liquidaciones automáticas tras la entrega.',
-      'Suite de reportes con trazabilidad de incidencias, comparativas de cup score y NPS post-entrega.'
-    ],
-    touchpoints: [
-      { name: 'Backoffice modular', detail: 'Roles granulares, bitácora de auditoría y asistentes para resolución rápida de incidencias.' },
-      { name: 'BI & alertas', detail: 'Dashboards con KPIs en tiempo real, alertas tempranas y exportaciones a Data Warehouse.' },
-      { name: 'Gestión de contenidos', detail: 'CMS para campañas, bundles estacionales y recetas patrocinadas.' }
-    ]
+    title: 'Tueste bajo demanda',
+    description: 'Perfilamos curvas térmicas exclusivas para cada microlote y método que elijas.'
+  },
+  {
+    title: 'Entrega fresca',
+    description: 'Despacho en menos de 48 horas con trazabilidad completa desde la finca a tu puerta.'
   }
 ]
 
-const personalizationSteps = [
-  {
-    id: '01',
-    title: 'Exploración de origen y lote',
-    description: 'Filtros facetados por país, altitud, variedad y certificaciones con disponibilidad de inventario en tiempo real.',
-    deliverables: [
-      'Mapa interactivo y fichas comparables de microlotes.',
-      'Indicadores de frescura (fecha de cosecha, humedad, densidad).',
-      'Etiquetas de atributos sensoriales y puntaje SCA.'
-    ],
-    owner: 'Módulo Catálogo & Contenido'
-  },
-  {
-    id: '02',
-    title: 'Selección de perfil de tueste',
-    description: 'Motor que recomienda tuestes según método favorito del cliente y disponibilidad de capacidad en la tostadora.',
-    deliverables: [
-      'Simulaciones de sabor y curvas de temperatura validadas por laboratorio.',
-      'Promesas de fecha de tueste y descanso óptimo según el perfil elegido.',
-      'Alertas de producción cuando un lote alcanza su límite mínimo.'
-    ],
-    owner: 'OMS & Tostaduría Aliada'
-  },
-  {
-    id: '03',
-    title: 'Configuración de molienda y empaque',
-    description: 'Calibraciones predefinidas por método (espresso, filtro, prensa, cold brew) y empaques sostenibles con costos asociados.',
-    deliverables: [
-      'Tabla de equivalencias de micraje con recomendaciones de preparación.',
-      'Selección de empaques compostables, valvulados o al vacío con impacto en shelf life.',
-      'Visualización del impacto en costo y lead time por combinación.'
-    ],
-    owner: 'Centro de Acopio & Fulfillment'
-  },
-  {
-    id: '04',
-    title: 'Checkout omnicanal',
-    description: 'Pagos escalables con split automático, suscripciones recurrentes y opciones de envío express o programado.',
-    deliverables: [
-      'Wallet de cafés favoritos, recompensas y códigos de degustación.',
-      'Integración con transportistas urbanos y logística fría para ciudades clave.',
-      'Confirmaciones en tiempo real vía email, app y webhook.'
-    ],
-    owner: 'Motor de Pagos & OMS'
-  },
-  {
-    id: '05',
-    title: 'Postventa y fidelización',
-    description: 'Seguimiento detallado del despacho, encuestas sensoriales y automatizaciones de recompra.',
-    deliverables: [
-      'Timeline con hitos de acopio, tueste, empaque y entrega con evidencias multimedia.',
-      'Encuestas NPS y recordatorios de molienda programados.',
-      'Programa de membresías con envíos prioritarios y acceso a lotes exclusivos.'
-    ],
-    owner: 'CRM & Customer Success'
-  }
+const heroActions = [
+  { label: 'Explorar experiencias', target: 'experiencias', variant: 'primary' },
+  { label: 'Conocer orígenes', target: 'origenes', variant: 'ghost' }
 ]
 
-const vendorPipeline = [
-  {
-    title: '1. Registro y prevalidación',
-    sla: 'SLA: 6 h desde la carga',
-    owner: 'Vendedor + Control de Calidad',
-    description: 'El productor crea la ficha digital del lote, adjunta resultados de laboratorio y agenda ventana de entrega.',
-    actions: [
-      'Checklist guiado para humedad, densidad, trazabilidad y certificaciones.',
-      'Aprobaciones automáticas mediante scoring mínimo configurado por el admin.',
-      'Reserva de transporte y generación de etiquetas QR para pallets.'
-    ],
-    signals: [
-      'Confirmación instantánea de recepción de documentos.',
-      'Alerta push al vendedor ante observaciones del analista.'
-    ]
-  },
-  {
-    title: '2. Recepción en centro de acopio',
-    sla: 'SLA: 24 h desde arribo',
-    owner: 'Operaciones de Acopio',
-    description: 'El lote se pesa, se toma muestra de control y se registra evidencia fotográfica para el vendedor.',
-    actions: [
-      'Pesaje automatizado con integración a básculas inteligentes.',
-      'Registro de humedad y colorímetro con publicación en la ficha.',
-      'Liberación del lote a inventario temporal para preventa.'
-    ],
-    signals: [
-      'Push + email al vendedor con fotos y resultados.',
-      'Webhook al admin con checklist de incidencias.'
-    ]
-  },
-  {
-    title: '3. Programación de tueste',
-    sla: 'SLA: 48 h tras liberación de QC',
-    owner: 'Coordinador de Tostado',
-    description: 'Se asigna la curva de tueste al lote, se actualiza la disponibilidad y se comunica al cliente final.',
-    actions: [
-      'Bloqueo de capacidad por perfil seleccionado en el checkout.',
-      'Sincronización con IoT de tostadora para capturar curvas y lotes reales.',
-      'Actualización automática del ETA en los pedidos impactados.'
-    ],
-    signals: [
-      'Push al vendedor con agenda confirmada.',
-      'Notificación al cliente si el tueste genera cambios en la fecha de entrega.'
-    ]
-  },
-  {
-    title: '4. Molienda, empaque y QA final',
-    sla: 'SLA: 12 h posteriores al tueste',
-    owner: 'Centro de Fulfillment',
-    description: 'El lote se muele según configuraciones, se empaca y pasa por control de calidad final antes de despacho.',
-    actions: [
-      'Asignación automática de molinos y validación de micraje con sensores.',
-      'Etiquetado inteligente con códigos de lote, fecha de tueste y método recomendado.',
-      'Control de fugas y revisión de sellado antes de cierre de guía.'
-    ],
-    signals: [
-      'Reporte al vendedor con evidencia fotográfica del empaquetado.',
-      'Actualización del estado del pedido a “En ruta”.'
-    ]
-  },
-  {
-    title: '5. Entrega y liquidación',
-    sla: 'SLA: 24-72 h según destino',
-    owner: 'Logística + Finanzas',
-    description: 'Seguimiento de última milla, confirmación de entrega y liquidación automática al vendedor.',
-    actions: [
-      'Integración con transportistas para tracking en vivo y pruebas de entrega.',
-      'Liquidación automática del lote descontando comisiones y costos logísticos.',
-      'Encuesta post entrega y actualización de rating del vendedor.'
-    ],
-    signals: [
-      'Notificación de entrega con evidencia al vendedor y cliente.',
-      'Estado de pago actualizado en el panel administrativo.'
-    ]
+const scrollToSection = (sectionId: string) => {
+  if (!process.client) return
+  const element = document.getElementById(sectionId)
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-]
+}
 
-const notificationMatrix = [
-  {
-    event: 'Ficha de lote enviada',
-    vendor: 'Push + email con checklist de revisión y tiempo estimado de respuesta.',
-    operations: 'Creación automática de ticket en tablero Kanban de calidad.',
-    customer: 'No aplica (lote aún no visible públicamente).'
-  },
-  {
-    event: 'Recepción en acopio',
-    vendor: 'Push + email con fotos, pesaje y observaciones.',
-    operations: 'Actualización de dashboard en tiempo real y alerta en Slack/Teams.',
-    customer: 'Suscriptores “early access” reciben aviso de nuevo lote disponible.'
-  },
-  {
-    event: 'Tueste iniciado',
-    vendor: 'Push con hora estimada de finalización y curvas disponibles.',
-    operations: 'Sincronización IoT + tarea de QA en el panel operativo.',
-    customer: 'Actualización en la línea de tiempo del pedido y aviso en la app.'
-  },
-  {
-    event: 'Empaque y despacho',
-    vendor: 'Email con guía, lote empacado y ventana de salida.',
-    operations: 'OMS genera manifiesto y bloquea inventario restante.',
-    customer: 'Tracking en vivo, confirmación por email/app y opción de reagendar.'
-  },
-  {
-    event: 'Entrega confirmada',
-    vendor: 'Liquidación automática + encuesta de satisfacción.',
-    operations: 'Cierre de ticket, conciliación contable y archivo en el DWH.',
-    customer: 'Encuesta sensorial, recordatorio de recompra y actualización de puntos.'
-  }
-]
+const selectExperience = (experience: Experience) => {
+  selectedExperience.value = experience
+}
 
-const adminStacks = [
-  {
-    title: 'Operaciones y cumplimiento',
-    description: 'Visibilidad integral del flujo acopio → tueste → empaque → entrega.',
-    modules: [
-      'Dashboard en tiempo real de capacidad de tostadoras, molinos y líneas de empaque.',
-      'Gestión de SLA con semáforos y re-enrutamiento automático ante cuellos de botella.',
-      'Registro de incidencias con evidencia multimedia y planes de acción asignables.'
-    ],
-    kpis: [
-      'Lead time promedio acopio → despacho.',
-      '% de lotes aprobados sin reproceso.',
-      'Nivel de ocupación por equipo crítico.'
-    ]
-  },
-  {
-    title: 'Administración y finanzas',
-    description: 'Control de márgenes, split de pagos y gestión de contratos.',
-    modules: [
-      'Motor de comisiones configurable por vendedor, origen o tipo de cliente.',
-      'Conciliación bancaria automática y generación de facturas electrónicas.',
-      'Gestión de contratos digitales, renovaciones y garantías de calidad.'
-    ],
-    kpis: [
-      'Margen neto por lote y por canal.',
-      'Tiempo promedio de liquidación al productor.',
-      'Incidencias financieras resueltas en primera llamada.'
-    ]
-  },
-  {
-    title: 'Estrategia comercial & CX',
-    description: 'Orquesta campañas, fidelización y aprendizaje del cliente final.',
-    modules: [
-      'Segmentación avanzada por comportamiento de compra y preferencias sensoriales.',
-      'Motor de recomendaciones que combina datos de cata y satisfacción.',
-      'Experimentación A/B para landing pages, bundles y planes de suscripción.'
-    ],
-    kpis: [
-      'NPS post entrega y tasa de recompra a 60 días.',
-      'Conversión de campañas personalizadas por segmento.',
-      'Participación de miembros en programas de suscripción.'
-    ]
-  }
-]
+const selectProfile = (profile: BrewProfile) => {
+  selectedProfile.value = profile
+  flavorBalance.value = profile.balance
+}
+
+let revealObserver: IntersectionObserver | null = null
+
+onMounted(() => {
+  if (!process.client) return
+
+  revealObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+        }
+      })
+    },
+    {
+      threshold: 0.2,
+      rootMargin: '0px 0px -10% 0px'
+    }
+  )
+
+  document.querySelectorAll<HTMLElement>('.reveal-on-scroll').forEach((element) => {
+    element.classList.add('is-ready')
+    revealObserver?.observe(element)
+  })
+})
+
+onBeforeUnmount(() => {
+  revealObserver?.disconnect()
+})
 </script>
 
 <template>
-  <div class="page">
-    <header class="hero">
-      <p class="eyebrow">Marketplace integral de café de especialidad</p>
-      <h1>Propuesta operativa para venta de café con personalización extremo a extremo</h1>
-      <p class="lead">
-        Arquitectura que permite a clientes configurar su café ideal, a vendedores monitorear cada hito desde el acopio hasta la entrega y a administradores gobernar la operación con datos en tiempo real.
-      </p>
-      <div class="metrics-grid">
-        <div v-for="metric in metricCards" :key="metric.label" class="metric-card">
-          <span class="metric-number">{{ formatMetric(metric.value, metric.digits) }}</span>
-          <span class="metric-label">{{ metric.label }}</span>
+  <main class="page">
+    <section class="hero">
+      <div class="hero__background" :style="{ backgroundImage: `url(${heroImage})` }" />
+      <div class="hero__overlay" />
+      <div class="container hero__content">
+        <span class="hero__tag">Café de especialidad · Costa Rica</span>
+        <h1 class="hero__title">Siente la esencia volcánica en cada taza</h1>
+        <p class="hero__subtitle">
+          Configura experiencias inmersivas con café recién tostado, directo de productores costarricenses.
+        </p>
+        <div class="hero__actions">
+          <button
+            v-for="action in heroActions"
+            :key="action.target"
+            :class="['button', action.variant === 'ghost' ? 'button--ghost' : 'button--primary']"
+            type="button"
+            @click="scrollToSection(action.target)"
+          >
+            {{ action.label }}
+          </button>
+        </div>
+        <div class="hero__stats">
+          <div v-for="stat in heroStats" :key="stat.label" class="stat-card">
+            <span class="stat-card__value">{{ stat.value }}</span>
+            <span class="stat-card__label">{{ stat.label }}</span>
+            <p class="stat-card__detail">{{ stat.detail }}</p>
+          </div>
         </div>
       </div>
-    </header>
+    </section>
 
-    <section class="roles">
-      <h2>Pilares de experiencia por tipo de usuario</h2>
-      <div class="role-grid">
-        <article v-for="role in roleCapabilities" :key="role.role" class="role-card">
-          <header>
-            <h3>{{ role.role }}</h3>
-            <p>{{ role.description }}</p>
-          </header>
-          <h4>Capacidades clave</h4>
-          <ul>
-            <li v-for="item in role.capabilities" :key="item">{{ item }}</li>
-          </ul>
-          <h4>Touchpoints</h4>
-          <ul>
-            <li v-for="item in role.touchpoints" :key="item.name">
-              <strong>{{ item.name }}:</strong> {{ item.detail }}
-            </li>
-          </ul>
-        </article>
+    <section id="experiencias" class="section experiences reveal-on-scroll">
+      <div class="container">
+        <header class="section__header">
+          <h2>Elige tu momento ideal</h2>
+          <p>Activa una experiencia curada y descubre cómo personalizamos molienda, tueste y ritual.</p>
+        </header>
+        <div class="experiences__grid">
+          <article
+            v-for="experience in experiences"
+            :key="experience.id"
+            :class="['experience-card', { 'is-active': experience.id === selectedExperience.id }]"
+            @click="selectExperience(experience)"
+          >
+            <div class="experience-card__media" :style="{ backgroundImage: `url(${experience.image})` }">
+              <span class="experience-card__tag">{{ experience.tagline }}</span>
+            </div>
+            <div class="experience-card__body">
+              <h3>{{ experience.title }}</h3>
+              <p>{{ experience.description }}</p>
+            </div>
+          </article>
+        </div>
+        <transition name="fade-slide">
+          <div :key="selectedExperience.id" class="experience-detail">
+            <h3>{{ selectedExperience.title }}</h3>
+            <ul>
+              <li v-for="highlight in selectedExperience.highlights" :key="highlight">
+                {{ highlight }}
+              </li>
+            </ul>
+          </div>
+        </transition>
       </div>
     </section>
 
-    <section class="personalization">
-      <h2>Flujo de personalización y compra</h2>
-      <p class="section-lead">Cada etapa conecta inventario real, capacidad de tueste y logística para asegurar entregas frescas y trazables.</p>
-      <ol class="step-grid">
-        <li v-for="step in personalizationSteps" :key="step.id">
-          <span class="step-id">{{ step.id }}</span>
-          <div class="step-body">
+    <section id="origenes" class="section origins reveal-on-scroll">
+      <div class="container origins__layout">
+        <div class="origins__visual">
+          <div class="origins__image">
+            <img
+              src="https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?auto=format&fit=crop&w=1000&q=80"
+              alt="Paisaje cafetalero de Costa Rica"
+              loading="lazy"
+            />
+          </div>
+          <span class="origins__caption">Bosques nubosos, suelos volcánicos y microclimas que perfuman cada grano.</span>
+        </div>
+        <div class="origins__content">
+          <h2>Orígenes con identidad costarricense</h2>
+          <p>Conecta con microlotes trazables cultivados en equilibrio con la naturaleza.</p>
+          <div class="origins__cards">
+            <article v-for="region in regionHighlights" :key="region.name" class="origin-card">
+              <h3>{{ region.name }}</h3>
+              <p class="origin-card__profile">{{ region.profile }}</p>
+              <p class="origin-card__altitude">{{ region.altitude }}</p>
+              <p class="origin-card__detail">{{ region.detail }}</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section sensory reveal-on-scroll">
+      <div class="container sensory__grid">
+        <div class="sensory__panel">
+          <h2>Afina tu perfil sensorial</h2>
+          <p>Desliza para encontrar tu balance perfecto entre brillo, dulzor e intensidad.</p>
+          <div class="sensory__meter" :style="{ background: sliderGradient }">
+            <input v-model="flavorBalance" type="range" min="0" max="100" />
+            <div class="sensory__labels">
+              <span>Brillante</span>
+              <span>Dulce</span>
+              <span>Intenso</span>
+            </div>
+          </div>
+          <div class="sensory__result">
+            <h3>{{ balanceDescriptor.title }}</h3>
+            <p>{{ balanceDescriptor.description }}</p>
+          </div>
+        </div>
+        <div class="sensory__profiles">
+          <h3>Perfiles recomendados</h3>
+          <div class="profile-grid">
+            <button
+              v-for="profile in brewProfiles"
+              :key="profile.id"
+              :class="['profile-card', { 'is-selected': profile.id === selectedProfile.id }]"
+              type="button"
+              @click="selectProfile(profile)"
+            >
+              <span class="profile-card__name">{{ profile.name }}</span>
+              <span class="profile-card__method">{{ profile.method }}</span>
+              <p class="profile-card__notes">{{ profile.notes }}</p>
+            </button>
+          </div>
+          <div class="profile-detail">
+            <p>{{ selectedProfile.ritual }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section journey reveal-on-scroll">
+      <div class="container">
+        <header class="section__header">
+          <h2>Ruta del grano a tu taza</h2>
+          <p>Transparencia total con hitos monitoreados en tiempo real.</p>
+        </header>
+        <div class="timeline">
+          <div
+            v-for="(step, index) in timelineSteps"
+            :key="step.title"
+            class="timeline__step"
+            :style="{ transitionDelay: `${index * 80}ms` }"
+          >
+            <span class="timeline__index">{{ index + 1 }}</span>
             <h3>{{ step.title }}</h3>
             <p>{{ step.description }}</p>
-            <ul>
-              <li v-for="deliverable in step.deliverables" :key="deliverable">{{ deliverable }}</li>
-            </ul>
-            <p class="owner">Responsable: {{ step.owner }}</p>
           </div>
-        </li>
-      </ol>
-    </section>
-
-    <section class="catalog">
-      <h2>Catálogo operativo de lotes activos</h2>
-      <p class="section-lead">Visualiza en un mismo tablero los lotes disponibles, configuraciones permitidas y estado operativo para habilitar compras informadas.</p>
-      <div class="catalog-controls">
-        <label>
-          <span>Buscar</span>
-          <input v-model="q" type="search" placeholder="Filtrar por café, origen o vendedor" />
-        </label>
-        <label>
-          <span>Categoría</span>
-          <select v-model="selectedCategory">
-            <option v-for="option in categoryOptions" :key="option" :value="option">{{ option }}</option>
-          </select>
-        </label>
-        <label>
-          <span>Valor</span>
-          <select v-model="selectedValue">
-            <option value="">Todos</option>
-            <option v-for="option in valueOptions" :key="option" :value="option">{{ option }}</option>
-          </select>
-        </label>
-      </div>
-      <div class="table-wrap">
-        <table class="table">
-          <thead>
-            <tr>
-              <th v-for="col in orderedColumns" :key="col">{{ col }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in filteredRows" :key="row.path">
-              <td v-for="col in orderedColumns" :key="col">
-                <template v-if="col === 'Café'">
-                  <NuxtLink :to="row.path">{{ formatCell(row[col]) }}</NuxtLink>
-                </template>
-                <template v-else>
-                  {{ formatCell(row[col]) }}
-                </template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        </div>
       </div>
     </section>
 
-    <section class="pipeline">
-      <h2>Pipeline monitorizado del vendedor y centro de acopio</h2>
-      <p class="section-lead">Cada hito genera notificaciones, evidencia y reglas de negocio que mantienen alineados a vendedor, operaciones y cliente final.</p>
-      <div class="pipeline-grid">
-        <article v-for="stage in vendorPipeline" :key="stage.title" class="pipeline-card">
-          <header>
-            <h3>{{ stage.title }}</h3>
-            <span class="sla">{{ stage.sla }}</span>
-          </header>
-          <p>{{ stage.description }}</p>
-          <h4>Acciones principales</h4>
-          <ul>
-            <li v-for="action in stage.actions" :key="action">{{ action }}</li>
-          </ul>
-          <p class="owner">Responsable: {{ stage.owner }}</p>
-          <p class="signals">
-            <strong>Alertas:</strong>
-            <span>{{ stage.signals.join(' · ') }}</span>
-          </p>
-        </article>
+    <section class="section cta reveal-on-scroll">
+      <div class="container cta__content">
+        <div>
+          <h2>Agenda una cata virtual</h2>
+          <p>Descubre lotes exclusivos con un barista costarricense en vivo y recibe tu kit degustación en casa.</p>
+        </div>
+        <button class="button button--ghost" type="button" @click="scrollToSection('experiencias')">
+          Iniciar recorrido
+        </button>
       </div>
     </section>
-
-    <section class="notifications">
-      <h2>Orquestación de notificaciones y comunicación</h2>
-      <p class="section-lead">Asegura transparencia y acción rápida mediante notificaciones sincronizadas para cada actor.</p>
-      <div class="table-wrap">
-        <table class="notif-table">
-          <thead>
-            <tr>
-              <th>Evento</th>
-              <th>Vendedor</th>
-              <th>Operaciones / Admin</th>
-              <th>Cliente</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in notificationMatrix" :key="row.event">
-              <th scope="row">{{ row.event }}</th>
-              <td>{{ row.vendor }}</td>
-              <td>{{ row.operations }}</td>
-              <td>{{ row.customer }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="operations">
-      <h2>Capas administrativas y de analítica</h2>
-      <p class="section-lead">Backoffice modular que conecta operaciones físicas, finanzas y experiencia del cliente con datos confiables.</p>
-      <div class="ops-grid">
-        <article v-for="area in adminStacks" :key="area.title" class="ops-card">
-          <header>
-            <h3>{{ area.title }}</h3>
-            <p>{{ area.description }}</p>
-          </header>
-          <h4>Módulos clave</h4>
-          <ul>
-            <li v-for="module in area.modules" :key="module">{{ module }}</li>
-          </ul>
-          <h4>KPIs de control</h4>
-          <ul>
-            <li v-for="kpi in area.kpis" :key="kpi">{{ kpi }}</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-  </div>
+  </main>
 </template>
 
 <style scoped>
+:global(:root) {
+  --coffee-dark: #2b1d14;
+  --coffee-medium: #8c5a2b;
+  --coffee-cream: #f7efe5;
+  --coffee-leaf: #4e8d64;
+  --coffee-sand: #d0a362;
+  --coffee-shadow: rgba(26, 18, 12, 0.7);
+  --coffee-white: #fff9f3;
+  --coffee-black: #120b07;
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
 .page {
-  display: grid;
-  gap: 3rem;
-  padding: 2rem 1.5rem 4rem;
+  background: var(--coffee-cream);
+  color: var(--coffee-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.container {
+  width: min(1100px, 92vw);
+  margin: 0 auto;
+}
+
+.section {
+  padding: 5rem 0;
+}
+
+.section__header {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 3rem;
+  color: var(--coffee-dark);
+}
+
+.section__header h2 {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin-bottom: 0.75rem;
+}
+
+.section__header p {
+  font-size: 1rem;
+  opacity: 0.78;
 }
 
 .hero {
-  display: grid;
-  gap: 1.5rem;
-  text-align: left;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 6rem 0 4rem;
+  color: #ffffff;
 }
 
-.eyebrow {
-  font-size: 0.85rem;
+.hero__background,
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.hero__background {
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.05);
+  transition: transform 12s ease;
+  filter: saturate(1.1) brightness(0.9);
+}
+
+.hero:hover .hero__background {
+  transform: scale(1.1);
+}
+
+.hero__overlay {
+  background: linear-gradient(120deg, rgba(18, 11, 7, 0.9) 15%, rgba(43, 29, 20, 0.75) 55%, rgba(18, 11, 7, 0.6) 100%);
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fade-in 1s ease forwards;
+}
+
+.hero__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #7c3aed;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
-.hero h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 2.75rem);
+.hero__title {
+  font-size: clamp(2.8rem, 5vw, 3.6rem);
   line-height: 1.1;
+  max-width: 14ch;
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
 }
 
-.lead {
-  margin: 0;
+.hero__subtitle {
   font-size: 1.05rem;
-  color: #374151;
-  max-width: 60ch;
+  max-width: 46ch;
+  opacity: 0.85;
 }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-.metric-card {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.metric-number {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.metric-label {
-  color: #4b5563;
-  font-size: 0.95rem;
-}
-
-section {
-  display: grid;
-  gap: 1.25rem;
-}
-
-section h2 {
-  margin: 0;
-  font-size: 1.75rem;
-}
-
-.section-lead {
-  margin: 0;
-  color: #4b5563;
-  max-width: 70ch;
-}
-
-.role-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.role-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: grid;
-  gap: 1rem;
-  box-shadow: 0 12px 24px -24px rgba(15, 23, 42, 0.6);
-}
-
-.role-card h3 {
-  margin: 0 0 0.35rem;
-  font-size: 1.25rem;
-}
-
-.role-card p {
-  margin: 0;
-  color: #4b5563;
-}
-
-.role-card ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.personalization .step-grid {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 1rem;
-}
-
-.step-grid li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 1.25rem 1.5rem;
-  align-items: start;
-  box-shadow: 0 12px 32px -28px rgba(30, 64, 175, 0.45);
-}
-
-.step-id {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #7c3aed;
-}
-
-.step-body h3 {
-  margin: 0 0 0.35rem;
-}
-
-.step-body p {
-  margin: 0 0 0.5rem;
-  color: #374151;
-}
-
-.step-body ul {
-  margin: 0 0 0.75rem;
-  padding-left: 1.1rem;
-  display: grid;
-  gap: 0.3rem;
-}
-
-.owner {
-  margin: 0;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.catalog {
-  gap: 1.5rem;
-}
-
-.catalog-controls {
+.hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
+  gap: 0.8rem;
 }
 
-.catalog-controls label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-  color: #374151;
-}
-
-.catalog-controls input,
-.catalog-controls select {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 0.45rem 0.65rem;
-  min-width: 200px;
-  font-size: 0.95rem;
-}
-
-.table-wrap {
-  overflow: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-  min-width: 900px;
-}
-
-.table th,
-.table td {
-  padding: 0.75rem 0.85rem;
-  text-align: left;
-  border-bottom: 1px solid #f3f4f6;
-  vertical-align: top;
-}
-
-.table thead {
-  background: #f9fafb;
-}
-
-.table tbody tr:hover td {
-  background: #f3f4f6;
-}
-
-.table a {
-  color: #2563eb;
-  text-decoration: none;
+.button {
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
   font-weight: 600;
+  padding: 0.8rem 1.6rem;
+  font-size: 0.95rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
-.pipeline-grid {
+.button--primary {
+  background: linear-gradient(120deg, #f0cf97, #c8894f);
+  color: var(--coffee-black);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+}
+
+.button--ghost {
+  background: transparent;
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(0, 0, 0, 0.28);
+}
+
+.hero__stats {
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-top: 1rem;
 }
 
-.pipeline-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+.stat-card {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  padding: 1.2rem 1.3rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.stat-card__value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-card__label {
+  display: block;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.stat-card__detail {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  opacity: 0.72;
+}
+
+.experiences__grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.experience-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 20px 40px rgba(19, 12, 8, 0.08);
+  transition: transform 0.4s ease, box-shadow 0.4s ease, border 0.3s ease;
+  border: 1px solid rgba(140, 74, 47, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.experience-card__media {
+  background-size: cover;
+  background-position: center;
+  aspect-ratio: 4 / 5;
+  position: relative;
+}
+
+.experience-card__media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(18, 11, 7, 0) 40%, rgba(18, 11, 7, 0.6) 100%);
+}
+
+.experience-card__tag {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--coffee-black);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.experience-card__body {
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.experience-card__body h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--coffee-dark);
+}
+
+.experience-card__body p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(27, 17, 12, 0.75);
+}
+
+.experience-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 26px 52px rgba(18, 11, 7, 0.12);
+}
+
+.experience-card.is-active {
+  border: 1.5px solid rgba(78, 141, 100, 0.6);
+  box-shadow: 0 26px 52px rgba(78, 141, 100, 0.24);
+}
+
+.experience-detail {
+  margin-top: 2.5rem;
+  padding: 2rem;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(247, 239, 229, 0.92));
+  box-shadow: 0 20px 50px rgba(18, 11, 7, 0.12);
+}
+
+.experience-detail h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: var(--coffee-dark);
+}
+
+.experience-detail ul {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.2rem;
+  color: rgba(27, 17, 12, 0.8);
+}
+
+.origins__layout {
+  display: grid;
+  gap: 3rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+}
+
+.origins__visual {
+  display: grid;
+  gap: 1rem;
+}
+
+.origins__image {
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 60px rgba(18, 11, 7, 0.15);
+}
+
+.origins__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.origins__caption {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(27, 17, 12, 0.6);
+}
+
+.origins__content h2 {
+  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  margin-bottom: 1rem;
+}
+
+.origins__content p {
+  font-size: 1rem;
+  max-width: 40ch;
+  margin-bottom: 2rem;
+  color: rgba(27, 17, 12, 0.7);
+}
+
+.origins__cards {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.origin-card {
   padding: 1.5rem;
-  display: grid;
-  gap: 0.85rem;
-  box-shadow: 0 12px 32px -28px rgba(30, 64, 175, 0.35);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(140, 74, 47, 0.15);
+  box-shadow: 0 15px 35px rgba(18, 11, 7, 0.08);
+  transition: transform 0.3s ease, border 0.3s ease;
 }
 
-.pipeline-card h3 {
-  margin: 0;
+.origin-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(78, 141, 100, 0.6);
+}
+
+.origin-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--coffee-dark);
+}
+
+.origin-card__profile {
+  font-weight: 600;
+  color: rgba(78, 141, 100, 0.95);
+}
+
+.origin-card__altitude {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0.6rem 0;
+  color: rgba(27, 17, 12, 0.5);
+}
+
+.origin-card__detail {
+  font-size: 0.95rem;
+  color: rgba(27, 17, 12, 0.75);
+}
+
+.sensory {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(247, 239, 229, 0.9));
+}
+
+.sensory__grid {
+  display: grid;
+  gap: 3rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+}
+
+.sensory__panel h2 {
+  font-size: clamp(2.1rem, 4vw, 2.7rem);
+  margin-bottom: 1rem;
+}
+
+.sensory__panel p {
+  color: rgba(27, 17, 12, 0.7);
+}
+
+.sensory__meter {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 1px rgba(18, 11, 7, 0.08);
+}
+
+.sensory__meter input[type='range'] {
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  height: 6px;
+  margin-bottom: 1.2rem;
+}
+
+.sensory__meter input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  background: rgba(18, 11, 7, 0.15);
+  border-radius: 999px;
+}
+
+.sensory__meter input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--coffee-white);
+  border: 2px solid rgba(140, 74, 47, 0.6);
+  margin-top: -8px;
+  box-shadow: 0 6px 20px rgba(18, 11, 7, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.sensory__meter input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.05);
+}
+
+.sensory__meter input[type='range']::-moz-range-track {
+  height: 6px;
+  background: rgba(18, 11, 7, 0.15);
+  border-radius: 999px;
+}
+
+.sensory__meter input[type='range']::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--coffee-white);
+  border: 2px solid rgba(140, 74, 47, 0.6);
+  box-shadow: 0 6px 20px rgba(18, 11, 7, 0.25);
+}
+
+.sensory__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(18, 11, 7, 0.6);
+}
+
+.sensory__result {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 30px rgba(18, 11, 7, 0.1);
+}
+
+.sensory__result h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.sensory__profiles h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.profile-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-card {
+  border-radius: 18px;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid rgba(140, 74, 47, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 38px rgba(18, 11, 7, 0.12);
+}
+
+.profile-card.is-selected {
+  border-color: rgba(78, 141, 100, 0.7);
+  box-shadow: 0 22px 42px rgba(78, 141, 100, 0.18);
+}
+
+.profile-card__name {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--coffee-dark);
+}
+
+.profile-card__method {
+  display: block;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0.4rem 0;
+  color: rgba(18, 11, 7, 0.5);
+}
+
+.profile-card__notes {
+  font-size: 0.95rem;
+  color: rgba(18, 11, 7, 0.7);
+}
+
+.profile-detail {
+  margin-top: 1.5rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(18, 11, 7, 0.7);
+}
+
+.timeline {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.timeline__step {
+  padding: 1.5rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(140, 74, 47, 0.18);
+  box-shadow: 0 18px 38px rgba(18, 11, 7, 0.1);
+  transition: transform 0.35s ease, box-shadow 0.35s ease, opacity 0.35s ease;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.timeline__step:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 44px rgba(18, 11, 7, 0.14);
+}
+
+.timeline__step h3 {
+  margin-top: 0.8rem;
   font-size: 1.1rem;
 }
 
-.pipeline-card p {
-  margin: 0;
-  color: #374151;
+.timeline__step p {
+  color: rgba(18, 11, 7, 0.65);
+  margin-top: 0.5rem;
 }
 
-.pipeline-card ul {
-  margin: 0;
-  padding-left: 1.2rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.pipeline-card .sla {
-  font-size: 0.85rem;
-  color: #7c3aed;
+.timeline__index {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(78, 141, 100, 0.12);
+  color: var(--coffee-leaf);
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.pipeline-card .signals {
-  color: #2563eb;
+.reveal-on-scroll.is-visible .timeline__step {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.notif-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 720px;
+.cta {
+  background: linear-gradient(135deg, rgba(18, 11, 7, 0.92), rgba(43, 29, 20, 0.82));
+  color: #ffffff;
 }
 
-.notif-table th,
-.notif-table td {
-  padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid #e5e7eb;
-  text-align: left;
+.cta__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
 }
 
-.notif-table thead th {
-  background: #f9fafb;
+.cta__content h2 {
+  font-size: clamp(2.1rem, 4vw, 2.8rem);
+  margin-bottom: 0.6rem;
 }
 
-.ops-grid {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+.cta__content p {
+  max-width: 48ch;
+  opacity: 0.85;
 }
 
-.ops-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: grid;
-  gap: 0.9rem;
-  box-shadow: 0 12px 30px -30px rgba(15, 118, 110, 0.6);
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
-.ops-card h3 {
-  margin: 0;
-  font-size: 1.15rem;
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.ops-card p {
-  margin: 0;
-  color: #374151;
+.reveal-on-scroll.is-ready {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: transform 0.6s ease, opacity 0.6s ease;
 }
 
-.ops-card ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 0.35rem;
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-@media (max-width: 640px) {
-  .page {
-    padding: 1.5rem 1rem 3rem;
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    padding: 5rem 0 3rem;
   }
 
-  .table {
-    font-size: 0.88rem;
-  }
-
-  .step-grid li {
+  .origins__layout,
+  .sensory__grid {
     grid-template-columns: 1fr;
   }
 
-  .step-id {
-    font-size: 1.25rem;
+  .cta__content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 4rem 0;
+  }
+
+  .hero__title {
+    font-size: clamp(2.4rem, 6vw, 3rem);
+  }
+
+  .hero__stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .experience-detail {
+    padding: 1.6rem;
+  }
+
+  .cta__content button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 540px) {
+  .hero {
+    min-height: 90vh;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .origins__caption {
+    font-size: 0.8rem;
+  }
+
+  .timeline {
+    grid-template-columns: 1fr;
   }
 }
 </style>
+
